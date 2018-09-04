@@ -1,64 +1,60 @@
 plugins {
-  id "java"
-  id "maven-publish"
-  id "eclipse"
-  id "idea"
-  id "com.jfrog.bintray" version "1.5"
-  id "com.github.jk1.dependency-license-report" version "0.3.11"
+	id "java"
+	id "maven-publish"
+	id "com.jfrog.bintray" version "1.5"
+	id "com.github.jk1.dependency-license-report" version "0.3.11"
 }
 
 sourceCompatibility = "1.8"
 targetCompatibility = "1.8"
 
 repositories {
-  jcenter()
-  mavenLocal()
+	jcenter()
 }
 
 dependencies {
-  compile 'com.marklogic:ml-javaclient-util:3.8.2'
-  compileOnly 'com.marklogic:marklogic-data-hub:3.0.0'
+	compile "org.junit.jupiter:junit-jupiter-api:5.3.0"
+	compile "org.springframework:spring-test:5.0.8.RELEASE"
+	compile "jaxen:jaxen:1.1.6"
 
-  compile 'jaxen:jaxen:1.1.6'
-  compile 'junit:junit:4+'
-  compile 'org.springframework:spring-test:4.1.5.RELEASE'
-  compile 'xmlunit:xmlunit:1.6'
+	// Support for DHF is provided, but a client must specify their own version of the DHF library to use
+	compileOnly "com.marklogic:marklogic-data-hub:3.0.0"
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
-  classifier 'sources'
-  from sourceSets.main.allJava
+	classifier "sources"
+	from sourceSets.main.allJava
 }
 
 javadoc.destinationDir = file(javadocsDir + "/" + project.name)
 javadoc.failOnError = false
 
 publishing {
-  publications {
-    mainJava(MavenPublication) {
-      from components.java
-    }
-    sourcesJava(MavenPublication) {
-      from components.java
-      artifact sourcesJar
-    }
-  }
+	publications {
+		mainJava(MavenPublication) {
+			from components.java
+		}
+		sourcesJava(MavenPublication) {
+			from components.java
+			artifact sourcesJar
+		}
+	}
 }
 
 if (project.hasProperty("myBintrayUser")) {
-  bintray {
-    user = myBintrayUser
-    key = myBintrayKey
-    publications = ['mainJava', 'sourcesJava']
-    pkg {
-      repo = 'maven'
-      name = project.name
-      licenses = ['Apache-2.0']
-      vcsUrl = 'https://github.com/rjrudin/' + project.name + '.git'
-      version {
-        name = project.version
-        released = new Date()
-      }
-    }
-  }
+	bintray {
+		user = myBintrayUser
+		key = myBintrayKey
+		publications = ["mainJava", "sourcesJava"]
+		pkg {
+			repo = "maven"
+			name = project.name
+			licenses = ["Apache-2.0"]
+			vcsUrl = "https://github.com/rjrudin/" + project.name + ".git"
+			version {
+				name = project.version
+				released = new Date()
+			}
+		}
+	}
 }

@@ -1,4 +1,4 @@
-package com.marklogic.junit.dhf;
+package com.marklogic.junit.spring;
 
 import com.marklogic.client.ext.DatabaseClientConfig;
 import com.marklogic.client.ext.helper.DatabaseClientProvider;
@@ -9,16 +9,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 
-/**
- * This Spring configuration class captures a typical setup for a Data Hub Framework project:
- * <ol>
- * <li>It reads properties from gradle.properties and gradle-local.properties</li>
- * <li>It assumes digest authentication with a username and password</li>
- * </ol>
- */
 @Configuration
 @PropertySource(value = {"file:gradle.properties", "file:gradle-local.properties"}, ignoreResourceNotFound = true)
-public class DataHubTestConfig {
+public class SimpleTestConfig {
 
 	@Value("${mlUsername}")
 	private String username;
@@ -29,20 +22,8 @@ public class DataHubTestConfig {
 	@Value("${mlHost:localhost}")
 	private String host;
 
-	@Value("${mlTestPort:0}")
-	private Integer testPort;
-
-	@Value("${mlTestDbName}")
-	private String testDatabaseName;
-
-	@Value("${mlStagingPort}")
-	private Integer stagingPort;
-
-	@Value("${mlStagingDbName}")
-	private String stagingDatabaseName;
-
-	@Value("${mlJobPort}")
-	private Integer jobPort;
+	@Value("${mlTestRestPort:0}")
+	private Integer restPort;
 
 	/**
 	 * Has to be static so that Spring instantiates it first.
@@ -55,20 +36,18 @@ public class DataHubTestConfig {
 	}
 
 	/**
-	 * Defines the configuration details for constructing a DatabaseClient.
+	 * Defines the configuration details for constructing a DatabaseClient. Assumes the use of digest authentication.
+	 * Can subclass and override this method to define a different authentication strategy.
 	 *
 	 * @return
 	 */
 	@Bean
 	public DatabaseClientConfig databaseClientConfig() {
-		DatabaseClientConfig config = new DatabaseClientConfig(host, testPort, username, password);
-		// DHF requires that the database name be set on the DatabaseClient
-		config.setDatabase(testDatabaseName);
-		return config;
+		return new DatabaseClientConfig(getHost(), getRestPort(), getUsername(), getPassword());
 	}
 
 	/**
-	 * ml-junit depends on one of these for obtaining a DatabaseClient.
+	 * AbstractSpringMarkLogicTest depends on an instance of DatabaseClientProvider.
 	 *
 	 * @return
 	 */
@@ -89,23 +68,7 @@ public class DataHubTestConfig {
 		return host;
 	}
 
-	public Integer getTestPort() {
-		return testPort;
-	}
-
-	public String getTestDatabaseName() {
-		return testDatabaseName;
-	}
-
-	public String getStagingDatabaseName() {
-		return stagingDatabaseName;
-	}
-
-	public Integer getStagingPort() {
-		return stagingPort;
-	}
-
-	public Integer getJobPort() {
-		return jobPort;
+	public Integer getRestPort() {
+		return restPort;
 	}
 }
