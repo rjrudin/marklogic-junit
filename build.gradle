@@ -13,12 +13,16 @@ repositories {
 }
 
 dependencies {
-	compile "org.junit.jupiter:junit-jupiter-api:5.3.0"
-	compile "org.springframework:spring-test:5.0.8.RELEASE"
+	compile "com.marklogic:ml-javaclient-util:3.8.1"
 	compile "jaxen:jaxen:1.1.6"
+	compile "org.junit.jupiter:junit-jupiter-api:5.3.0"
+	compile "org.springframework:spring-context:5.0.8.RELEASE"
+	compile "org.springframework:spring-test:5.0.8.RELEASE"
 
 	// Support for DHF is provided, but a client must specify their own version of the DHF library to use
-	compileOnly "com.marklogic:marklogic-data-hub:3.0.0"
+	compileOnly ("com.marklogic:marklogic-data-hub:3.0.0") {
+		exclude module: "ml-javaclient-util"
+	}
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {

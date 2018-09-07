@@ -1,0 +1,168 @@
+// This is required for Gradle version 4.5 or older - see https://www.petrikainulainen.net/programming/testing/junit-5-tutorial-running-unit-tests-with-gradle/
+buildscript {
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath "org.junit.platform:junit-platform-gradle-plugin:1.2.0"
+	}
+}
+
+plugins {
+	id "java"
+	id "net.saliman.properties" version "1.4.6"
+	id "com.marklogic.ml-data-hub" version "3.0.0"
+}
+
+// Also required when running Gradle version 4.5 or older
+apply plugin: "org.junit.platform.gradle.plugin"
+
+configurations {
+	mlcp
+}
+
+repositories {
+	jcenter()
+	maven { url "http://developer.marklogic.com/maven2/" }
+	mavenLocal()
+}
+
+dependencies {
+	testCompile "com.marklogic:marklogic-data-hub:3.0.0"
+	testCompile "com.marklogic:marklogic-junit:0.9.0"
+
+	// Required when running Gradle version 4.5 or older
+	testRuntime "org.junit.jupiter:junit-jupiter-engine:5.3.0"
+
+	// Dependencies needed for using MLCP to ingest data. The "lib" directory contains a log4j properties file that
+	// allows mlcp to log information as it runs.
+	mlcp "com.marklogic:mlcp:9.0.6"
+	mlcp files("lib")
+}
+
+task ingestNppes(type: com.marklogic.gradle.task.MlcpTask) {
+	classpath = configurations.mlcp
+	command = "IMPORT"
+	port = Integer.parseInt(mlStagingPort)
+	input_file_path = "input/nppes"
+	input_file_type = "delimited_text"
+	generate_uri = "true"
+	output_collections = "nppes,Patients"
+	output_permissions = "rest-reader,read,rest-writer,update"
+	output_uri_prefix = "/nppes"
+	output_uri_replace = ".*input/nppes,''"
+	output_uri_suffix = ".json"
+	document_type = "json"
+	delimiter = ","
+	transform_module = "/MarkLogic/data-hub-framework/transforms/mlcp-flow-transform.sjs"
+	transform_namespace = "http://marklogic.com/data-hub/mlcp-flow-transform"
+	transform_param = "entity-name=Patients,flow-name=nppes"
+	thread_count = 4
+	// This is needed so the mlcp transform runs in query mode
+	args = ["-modules_root", "/"]
+}
+
+/**
+ * Tasks for setting up a test database and a test app server that mirror either your final or staging database and
+ * app server, and then loading hub and user modules via the test app server so that REST options are accessible to it.
+ */
+task hubDeployTestDatabase(type: com.marklogic.gradle.task.MarkLogicTask) {
+	doLast {
+		println "Deploying a test database with name ${mlTestDbName} based on configuration files named ${mlTestDbFilename}"
+		new DeployHubTestDatabaseCommand(hubConfig, mlTestDbFilename, mlTestDbName).execute(mlCommandContext)
+	}
+}
+
+task hubDeployTestServer(type: com.marklogic.gradle.task.MarkLogicTask) {
+	doLast {
+		println "Deploying a test server with name ${mlTestServerName} and port ${mlTestPort}, connected to content database ${mlTestDbName}, based on configuration files named ${mlTestServerFilename}"
+		new DeployHubTestServerCommand(hubConfig, mlTestServerFilename, mlTestServerName, Integer.parseInt(mlTestPort), mlTestDbName).execute(mlCommandContext);
+	}
+}
+
+task hubLoadTestModules(type: com.marklogic.gradle.task.MarkLogicTask) {
+	description = "Load modules via the test REST server with a port defined by the mlTestPort property"
+	doLast {
+		// The staging properties are used for defining the connection for loading modules, so override
+		// additional properties (besides the port) here as needed
+		hubConfig.stagingPort = Integer.parseInt(mlTestPort)
+		// Need to set this so that final options are loaded into the test server to
+		hubConfig.finalPort = Integer.parseInt(mlTestPort)
+		new com.marklogic.hub.deploy.commands.LoadHubModulesCommand(hubConfig).execute(mlCommandContext)
+		new com.marklogic.hub.deploy.commands.LoadUserModulesCommand(hubConfig).execute(mlCommandContext)
+	}
+}
+// The timestamps file needs to be deleted so everything can be loaded, which ensures that REST options files are
+// loaded via the test server
+hubLoadTestModules.dependsOn mlDeleteModuleTimestampsFile
+
+task hubDeployTestResources {
+	description = "Deploy a test database and a test server, and then load all of the modules via the test server so that REST options are available through it"
+	dependsOn = ["hubDeployTestDatabase", "hubDeployTestServer", "hubLoadTestModules"]
+}
+hubDeployTestServer.mustRunAfter hubDeployTestDatabase
+hubLoadTestModules.mustRunAfter hubDeployTestServer
+
+task hubUndeployTestResources(type: com.marklogic.gradle.task.MarkLogicTask) {
+	description = "Undeploys the test server and database that were created via hubDeployTestResources"
+	doLast {
+		mlAdminManager.invokeActionRequiringRestart({
+			new com.marklogic.mgmt.resource.appservers.ServerManager(mlManageClient).deleteByIdField(mlTestServerName)
+			return true
+		})
+		new com.marklogic.mgmt.resource.databases.DatabaseManager(mlManageClient).deleteByName(mlTestDbName)
+	}
+}
+mlUndeploy.dependsOn hubUndeployTestResources
+
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.databind.node.TextNode
+import com.marklogic.appdeployer.AppConfig
+import com.marklogic.hub.HubConfig
+
+import java.util.regex.Pattern
+
+class DeployHubTestDatabaseCommand extends com.marklogic.hub.deploy.commands.DeployHubDatabaseCommand {
+	String testDatabaseName
+
+	DeployHubTestDatabaseCommand(HubConfig config, String databaseFilename, String testDatabaseName) {
+		super(config, databaseFilename)
+		this.testDatabaseName = testDatabaseName
+	}
+
+	@Override
+	protected JsonNode mergeDatabaseFiles(AppConfig appConfig) {
+		ObjectNode objectNode = (ObjectNode) super.mergeDatabaseFiles(appConfig)
+		objectNode.set("database-name", new TextNode(testDatabaseName))
+		return objectNode
+	}
+}
+
+class DeployHubTestServerCommand extends com.marklogic.hub.deploy.commands.DeployHubServersCommand {
+	String serverName
+	int port
+	String contentDatabaseName
+
+	DeployHubTestServerCommand(HubConfig config, String serverFilenamePattern, String serverName, int port, String contentDatabaseName) {
+		super(config)
+		setResourceFilenamesIncludePattern(Pattern.compile(serverFilenamePattern))
+		this.serverName = serverName
+		this.port = port
+		this.contentDatabaseName = contentDatabaseName
+	}
+
+	@Override
+	protected JsonNode mergeServerFiles(File f) {
+		ObjectNode objectNode = (ObjectNode) super.mergeServerFiles(f)
+		objectNode.set("server-name", new TextNode(serverName))
+		objectNode.set("port", new TextNode(port + ""))
+		objectNode.set("content-database", new TextNode(contentDatabaseName))
+		return objectNode
+	}
+}
+
+task harmonizeNppes(type: com.marklogic.gradle.task.RunFlowTask) {
+	entityName = "Patients"
+	flowName = "nppes"
+}

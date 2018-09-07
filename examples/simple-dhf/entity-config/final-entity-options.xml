@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<options xmlns="http://marklogic.com/appservices/search">
+	<constraint name="City">
+		<range type="xs:string" facet="true">
+			<element ns="" name="addressCityName"/>
+		</range>
+	</constraint>
+	<constraint name="State">
+		<range type="xs:string" facet="true">
+			<element ns="" name="addressStateName"/>
+		</range>
+	</constraint>
+	<return-facets>true</return-facets>
+</options>
