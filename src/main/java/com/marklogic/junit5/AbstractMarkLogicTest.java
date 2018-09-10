@@ -134,6 +134,10 @@ public abstract class AbstractMarkLogicTest extends LoggingObject {
 		}
 	}
 
+	protected void assertCollectionSize(String collection, int size) {
+		assertCollectionSize(null, collection, size);
+	}
+
 	/**
 	 * Verify the size of the given collection.
 	 *
@@ -166,9 +170,9 @@ public abstract class AbstractMarkLogicTest extends LoggingObject {
 	 * @param t
 	 * @return
 	 */
-	protected PermissionsTester readDocumentPermissions(String uri, DatabaseClient client) {
+	protected PermissionsTester readDocumentPermissions(String uri) {
 		DocumentMetadataHandle metadata = new DocumentMetadataHandle();
-		client.newDocumentManager().read(uri, metadata, new BytesHandle());
+		getDatabaseClient().newDocumentManager().read(uri, metadata, new BytesHandle());
 		return new PermissionsTester(metadata.getPermissions());
 	}
 
@@ -179,8 +183,8 @@ public abstract class AbstractMarkLogicTest extends LoggingObject {
 	 * @param client
 	 * @return
 	 */
-	protected XmlNode readDocumentProperties(String uri, DatabaseClient client) {
-		return new XmlNode(client.newServerEval().xquery(String.format("xdmp:document-properties('%s')", uri)).evalAs(String.class));
+	protected XmlNode readDocumentProperties(String uri) {
+		return new XmlNode(getDatabaseClient().newServerEval().xquery(String.format("xdmp:document-properties('%s')", uri)).evalAs(String.class));
 	}
 
 }

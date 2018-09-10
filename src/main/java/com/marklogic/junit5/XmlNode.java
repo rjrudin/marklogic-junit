@@ -84,7 +84,7 @@ public class XmlNode {
 	}
 
 	public void assertElementValue(String xpath, String value) {
-		assertElementValue("Could not find element with value", xpath, value);
+		assertElementValue(null, xpath, value);
 	}
 
 	public String getElementValue(String xpath) {
@@ -130,6 +130,10 @@ public class XmlNode {
 		}
 	}
 
+	public void assertElementCount(String xpath, int count) {
+		assertElementCount(null, xpath, count);
+	}
+
 	public void assertElementCount(String message, String xpath, int count) {
 		String xpathToTest = xpath + "[%d]";
 		assertElementExists(message, format(xpathToTest, count));
@@ -142,7 +146,7 @@ public class XmlNode {
 	}
 
 	public void assertElementExists(String xpath) {
-		assertElementExists("", xpath);
+		assertElementExists(null, xpath);
 	}
 
 	public void assertElementExists(String message, String xpath) {
@@ -162,7 +166,7 @@ public class XmlNode {
 
 	protected List<Element> evaluateForElements(String xpath) {
 		XPathFactory f = XPathFactory.instance();
-		XPathExpression<Element> expr = f.compile(xpath, Filters.element(), new HashMap<String, Object>(), namespaces);
+		XPathExpression<Element> expr = f.compile(xpath, Filters.element(), new HashMap<>(), namespaces);
 		return expr.evaluate(internalDoc);
 	}
 

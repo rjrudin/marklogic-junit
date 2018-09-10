@@ -1,6 +1,6 @@
 package org.example;
 
-import com.marklogic.client.io.BytesHandle;
+import com.marklogic.client.io.StringHandle;
 import com.marklogic.junit5.spring.AbstractSpringMarkLogicTest;
 import org.junit.jupiter.api.Test;
 
@@ -11,8 +11,8 @@ public class PrettyPrintXmlTest extends AbstractSpringMarkLogicTest {
 	 */
 	@Test
 	public void test() {
-		getDatabaseClient().newDocumentManager().write("/test/1.xml",
-			new BytesHandle("<parent><kid>one</kid><kid>two</kid></parent>".getBytes())
+		getDatabaseClient().newXMLDocumentManager().write("/test/1.xml",
+			new StringHandle("<parent><kid>one</kid><kid>two</kid></parent>")
 		);
 
 		readXmlDocument("/test/1.xml").prettyPrint();

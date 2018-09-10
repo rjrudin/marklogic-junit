@@ -1,8 +1,8 @@
 package org.example;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.marklogic.client.io.BytesHandle;
 import com.marklogic.client.io.SearchHandle;
+import com.marklogic.client.io.StringHandle;
 import com.marklogic.client.query.QueryManager;
 import com.marklogic.junit5.XmlNode;
 import com.marklogic.junit5.spring.AbstractSpringMarkLogicTest;
@@ -14,8 +14,8 @@ public class SearchTest extends AbstractSpringMarkLogicTest {
 
 	@Test
 	public void twoDocuments() {
-		getDatabaseClient().newDocumentManager().write("/test/1.xml", new BytesHandle("<message>Hello world</message>".getBytes()));
-		getDatabaseClient().newDocumentManager().write("/test/2.json", new BytesHandle("{\"message\":\"Hello world\"}".getBytes()));
+		getDatabaseClient().newXMLDocumentManager().write("/test/1.xml", new StringHandle("<message>Hello world</message>"));
+		getDatabaseClient().newJSONDocumentManager().write("/test/2.json", new StringHandle("{\"message\":\"Hello world\"}"));
 
 		QueryManager queryManager = getDatabaseClient().newQueryManager();
 		SearchHandle searchHandle = queryManager.search(queryManager.newStringDefinition(), new SearchHandle());

@@ -1,6 +1,6 @@
 package org.example;
 
-import com.marklogic.client.io.BytesHandle;
+import com.marklogic.client.io.StringHandle;
 import com.marklogic.junit5.MarkLogicNamespaceProvider;
 import com.marklogic.junit5.NamespaceProvider;
 import com.marklogic.junit5.XmlNode;
@@ -14,10 +14,9 @@ public class NamespaceTest extends AbstractSpringMarkLogicTest {
 		return new MarkLogicNamespaceProvider("m", "org:example");
 	}
 
-	// asdf
 	@Test
 	public void test() {
-		getDatabaseClient().newDocumentManager().write("/test/1.xml", new BytesHandle("<message xmlns='org:example'>Hello world</message>".getBytes()));
+		getDatabaseClient().newXMLDocumentManager().write("/test/1.xml", new StringHandle("<message xmlns='org:example'>Hello world</message>"));
 
 		XmlNode xml = readXmlDocument("/test/1.xml");
 
