@@ -1,5 +1,6 @@
-This project shows a bare minimum setup for writing JUnit tests with marklogic-junit against an application deployed 
-with [ml-gradle](https://github.com/marklogic-community/ml-gradle).
+This project shows a basic setup for writing JUnit tests with marklogic-junit against an application deployed 
+with [ml-gradle](https://github.com/marklogic-community/ml-gradle). In addition, it includes an example of executing
+tests written using [ml-unit-test](https://github.com/marklogic-community/ml-unit-test) via JUnit.
 
 ## Trying the project out locally
 
@@ -17,7 +18,8 @@ And then run the tests:
     ./gradlew test
 
 This task should complete with an output of "BUILD SUCCESSFUL", with the JUnit test being written to 
-./build/reports/tests/test/index.html . 
+./build/reports/tests/test/index.html . In this report, you'll also see how the 2 ml-unit-test modules - located under
+src/test/ml-modules - were both executed as separate tests. 
 
 ## Using marklogic-junit in your own ml-gradle project
 
@@ -37,7 +39,7 @@ Next, add the following dependencies - this assumes you're using Gradle version 
     dependencies {
       // existing dependencies
       
-      testCompile "com.marklogic:marklogic-junit:0.9.0"
+      testCompile "com.marklogic:marklogic-junit:0.10.0"
             
       testRuntime "org.junit.jupiter:junit-jupiter-engine:5.3.0"
     
@@ -109,3 +111,26 @@ AbstractMarkLogicTest:
     }
     
 You'll still be able to leverage all of the testing support in AbstractMarkLogicTest.
+
+### Optional - configuring ml-unit-test
+
+If you'd like to write and execute ml-unit-test test modules, add the following to your build.gradle file as well (grab
+the latest version for both dependencies):
+
+    mlRestApi "com.marklogic:ml-unit-test-modules:0.11.1"
+    testCompile "com.marklogic:ml-unit-test-client:0.11.1"
+
+In addition, add the following to gradle.properties so that you can store test modules in a directory separate from 
+your application modules:
+
+    mlModulePaths=src/main/ml-modules,src/test/ml-modules
+
+Finally, you'll need to stub out a very simple class in your src/test/java directory. You can use any class name and 
+package - the class simply needs to extend MlUnitTestsTest. For example, this is the class found in this sample project:
+
+    package org.example;    
+    import com.marklogic.junit5.spring.MlUnitTestsTest;
+    public class UnitTestsTest extends MlUnitTestsTest {}
+
+When this class is run, a test method in the parent class will be executed that handles finding all of the 
+ml-unit-test test modules and executing each one as a separate JUnit test. 

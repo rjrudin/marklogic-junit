@@ -30,7 +30,7 @@ Read through each of the following steps to use marklogic-junit in your own proj
 The following 2 dependencies are needed to write JUnit tests using marklogic-junit:
 
     testCompile "com.marklogic:marklogic-data-hub:3.0.0"
-    testCompile "com.marklogic:marklogic-junit:0.9.0"
+    testCompile "com.marklogic:marklogic-junit:0.10.0"
     
 In addition, the build.gradle file contains a set of tasks and classes for deploying test resources to a DHF application.
 These tasks and classes [can be copied from this gist](https://gist.github.com/rjrudin/ce347cd657b3768332c17641fdb12907). 

@@ -37,14 +37,15 @@ were generated:
       readDocumentProperties("/entity/1.json").assertElementExists("/prop:properties/prop:last-modified[. != '']");
     }
 
+## Getting started on an ml-gradle project
+
+If you'd like to use marklogic-junit on a regular ml-gradle project (not a DHF project), then 
+start with [the ml-gradle sample project](https://github.com/rjrudin/marklogic-junit/tree/master/examples/simple-ml-gradle) 
+to see a working example with instructions on how to get started. 
+
 ## Getting started on a Data Hub Framework project
 
 If you're working on a Data Hub Framework (DHF) project and you're like to start writing JUnit tests to verify your
 harmonize flows and other application features, then check out [the DHF sample project](https://github.com/rjrudin/marklogic-junit/tree/master/examples/simple-dhf) to
 see a working example with instructions on how to get started.
 
-## Getting started on an ml-gradle project
-
-If you'd like to use marklogic-junit on a regular ml-gradle project (not a DHF project), then 
-start with [the ml-gradle sample project](https://github.com/rjrudin/marklogic-junit/tree/master/examples/simple-ml-gradle) 
-to see a working example with instructions on how to get started. 

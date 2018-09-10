@@ -17,6 +17,7 @@ dependencies {
 	compile "com.marklogic:ml-javaclient-util:3.8.1"
 	compile "jaxen:jaxen:1.1.6"
 	compile "org.junit.jupiter:junit-jupiter-api:5.3.0"
+	compile "org.junit.jupiter:junit-jupiter-params:5.3.0"
 	compile "org.springframework:spring-context:5.0.8.RELEASE"
 	compile "org.springframework:spring-test:5.0.8.RELEASE"
 
@@ -24,6 +25,25 @@ dependencies {
 	compileOnly ("com.marklogic:marklogic-data-hub:3.0.0") {
 		exclude module: "ml-javaclient-util"
 	}
+
+	// Making this an optional dependency, as an ml-unit-test user is likely depending on it already
+	compileOnly "com.marklogic:ml-unit-test-client:0.11.1"
+
+	// Needed for testing
+	testCompile "com.marklogic:ml-unit-test-client:0.11.1"
+
+	// Needed by Gradle 4.6+ - see https://www.petrikainulainen.net/programming/testing/junit-5-tutorial-running-unit-tests-with-gradle/
+	testRuntime "org.junit.jupiter:junit-jupiter-engine:5.3.0"
+
+	// Forcing Spring to use logback instead of commons-logging
+	testRuntime "ch.qos.logback:logback-classic:1.1.8"
+	testRuntime group: "org.slf4j", name: "jcl-over-slf4j", version: "1.7.22"
+	testRuntime group: "org.slf4j", name: "slf4j-api", version: "1.7.22"
+}
+
+// Needed by Gradle 4.6+ - see https://www.petrikainulainen.net/programming/testing/junit-5-tutorial-running-unit-tests-with-gradle/
+test {
+	useJUnitPlatform()
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
