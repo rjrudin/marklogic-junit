@@ -8,6 +8,7 @@ This library makes that as simple as possible by providing the following support
 configuration you've already defined in your project
 1. Clear your test database before a test run so it always runs in a known state
 1. Easily read and make assertions on JSON and XML documents, including support for XPath-based assertions
+1. Easily integrate [ml-unit-test](https://github.com/marklogic-community/ml-unit-test) tests into a JUnit test suite
 1. And for Data Hub Framework users - run harmonize flows against your staging database and easily verify results in a test database that mirrors your final database
 
 Here's a simple example of a JUnit test that runs a harmonize flow and then makes assertions on some of the documents that 
