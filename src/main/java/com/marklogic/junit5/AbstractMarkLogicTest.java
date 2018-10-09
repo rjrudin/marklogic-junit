@@ -8,6 +8,10 @@ import com.marklogic.client.io.BytesHandle;
 import com.marklogic.client.io.DocumentMetadataHandle;
 import com.marklogic.client.io.JacksonHandle;
 import com.marklogic.client.io.StringHandle;
+import com.marklogic.test.unit.TestManager;
+import com.marklogic.test.unit.TestModule;
+import com.marklogic.test.unit.TestResult;
+import com.marklogic.test.unit.TestSuiteResult;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.Logger;
@@ -187,4 +191,18 @@ public abstract class AbstractMarkLogicTest extends LoggingObject {
 		return new XmlNode(getDatabaseClient().newServerEval().xquery(String.format("xdmp:document-properties('%s')", uri)).evalAs(String.class));
 	}
 
+	/**
+	 * Convenience method for executing marklogic-unit-test tests.
+	 *
+	 * @param testModule
+	 */
+	protected void runMarkLogicUnitTests(TestModule testModule) {
+		TestSuiteResult result = new TestManager(getDatabaseClient()).run(testModule);
+		for (TestResult testResult : result.getTestResults()) {
+			String failureXml = testResult.getFailureXml();
+			if (failureXml != null) {
+				Assertions.fail(String.format("Test %s in suite %s failed, cause: %s", testResult.getName(), testModule.getSuite(), failureXml));
+			}
+		}
+	}
 }
