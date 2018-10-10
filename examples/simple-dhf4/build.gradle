@@ -1,0 +1,140 @@
+plugins {
+	id 'java'
+	id 'net.saliman.properties' version '1.4.6'
+	id 'com.marklogic.ml-data-hub' version '4.0.1'
+}
+
+repositories {
+	jcenter()
+}
+
+dependencies {
+	testCompile "com.marklogic:marklogic-junit:0.11.0"
+
+	// Needed to execute tests written using ml-unit-test
+	mlRestApi "com.marklogic:marklogic-unit-test-modules:0.12.0"
+
+	// Needed by Gradle 4.6+
+	testRuntime "org.junit.jupiter:junit-jupiter-engine:5.3.0"
+}
+
+// Needed by Gradle 4.6+ - see https://www.petrikainulainen.net/programming/testing/junit-5-tutorial-running-unit-tests-with-gradle/
+test {
+	useJUnitPlatform()
+}
+
+// Bugfix for DHF4 - see https://github.com/marklogic/marklogic-data-hub/pull/1416
+ext {
+	def loadModulesCommand = mlAppDeployer.getCommand("LoadModulesCommand")
+	mlAppDeployer.getCommand("LoadHubModulesCommand").setExecuteSortOrder(loadModulesCommand.getExecuteSortOrder() - 1)
+}
+
+// Bugfix for DHF4
+task deleteModuleTimestampsFile(type: Delete) {
+	description = "Use this as mlDeleteModuleTimestampsFile doesn't seem to work with DHF4"
+	delete "build/ml-javaclient-util/module-timestamps.properties"
+}
+mlReloadModules.dependsOn deleteModuleTimestampsFile
+mlDeploy.dependsOn deleteModuleTimestampsFile
+
+
+/**
+ * Custom tasks for setting up test resources.
+ */
+
+task hubDeployTestDatabase(type: com.marklogic.gradle.task.MarkLogicTask) {
+	doLast {
+		println "Deploying a test database with name ${mlTestDbName} based on configuration file named ${mlTestDbFilename}"
+		new DeployHubTestDatabaseCommand(hubConfig, mlTestDbFilename, mlTestDbName).execute(mlCommandContext)
+	}
+}
+
+task hubDeployTestServer(type: com.marklogic.gradle.task.MarkLogicTask) {
+	doLast {
+		println "Deploying a test server with name ${mlTestServerName} and port ${mlTestPort}, connected to content database ${mlTestDbName}, based on configuration file named ${mlTestServerFilename}"
+		new DeployHubTestServerCommand(hubConfig, mlTestServerFilename, mlTestServerName, Integer.parseInt(mlTestPort), mlTestDbName).execute(mlCommandContext);
+	}
+}
+
+task hubLoadTestModules(type: com.marklogic.gradle.task.MarkLogicTask) {
+	description = "Load modules via the test REST server with a port defined by the mlTestPort property"
+	doLast {
+		// The staging properties are used for defining the connection for loading modules, so override
+		// additional properties (besides the port) here as needed
+		hubConfig.stagingPort = Integer.parseInt(mlTestPort)
+		// Need to set this so that final options are loaded into the test server to
+		hubConfig.finalPort = Integer.parseInt(mlTestPort)
+		new com.marklogic.hub.deploy.commands.LoadHubModulesCommand(hubConfig).execute(mlCommandContext)
+		//new com.marklogic.hub.deploy.commands.LoadUserModulesCommand(hubConfig).execute(mlCommandContext)
+	}
+}
+// The timestamps file needs to be deleted so everything can be loaded, which ensures that REST options files are
+// loaded via the test server
+hubLoadTestModules.dependsOn mlDeleteModuleTimestampsFile
+
+task hubDeployTestResources {
+	description = "Deploy a test database and a test server, and then load all of the modules via the test server so that REST options are available through it"
+	dependsOn = ["hubDeployTestDatabase", "hubDeployTestServer", "hubLoadTestModules"]
+}
+hubDeployTestServer.mustRunAfter hubDeployTestDatabase
+hubLoadTestModules.mustRunAfter hubDeployTestServer
+
+task hubUndeployTestResources(type: com.marklogic.gradle.task.MarkLogicTask) {
+	description = "Undeploys the test server and database that were created via hubDeployTestResources"
+	doLast {
+		mlAdminManager.invokeActionRequiringRestart({
+			new com.marklogic.mgmt.resource.appservers.ServerManager(mlManageClient).deleteByIdField(mlTestServerName)
+			return true
+		})
+		new com.marklogic.mgmt.resource.databases.DatabaseManager(mlManageClient).deleteByName(mlTestDbName)
+	}
+}
+mlUndeploy.dependsOn hubUndeployTestResources
+
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.databind.node.TextNode
+import com.marklogic.appdeployer.AppConfig
+import com.marklogic.hub.HubConfig
+
+import java.util.regex.Pattern
+
+class DeployHubTestDatabaseCommand extends com.marklogic.hub.deploy.commands.DeployHubDatabaseCommand {
+	String testDatabaseName
+
+	DeployHubTestDatabaseCommand(HubConfig config, String databaseFilename, String testDatabaseName) {
+		super(config, databaseFilename)
+		this.testDatabaseName = testDatabaseName
+	}
+
+	@Override
+	protected JsonNode mergeDatabaseFiles(AppConfig appConfig) {
+		ObjectNode objectNode = (ObjectNode) super.mergeDatabaseFiles(appConfig)
+		objectNode.set("database-name", new TextNode(testDatabaseName))
+		return objectNode
+	}
+}
+
+class DeployHubTestServerCommand extends com.marklogic.hub.deploy.commands.DeployHubServersCommand {
+	String serverName
+	int port
+	String contentDatabaseName
+
+	DeployHubTestServerCommand(HubConfig config, String serverFilenamePattern, String serverName, int port, String contentDatabaseName) {
+		super(config)
+		setResourceFilenamesIncludePattern(Pattern.compile(serverFilenamePattern))
+		this.serverName = serverName
+		this.port = port
+		this.contentDatabaseName = contentDatabaseName
+	}
+
+	@Override
+	protected JsonNode mergeServerFiles(File f) {
+		ObjectNode objectNode = (ObjectNode) super.mergeServerFiles(f)
+		objectNode.set("server-name", new TextNode(serverName))
+		objectNode.set("port", new TextNode(port + ""))
+		objectNode.set("content-database", new TextNode(contentDatabaseName))
+		return objectNode
+	}
+}
+
