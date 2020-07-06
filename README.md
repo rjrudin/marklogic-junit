@@ -1,3 +1,7 @@
+**This is now part of [marklogic-unit-test](https://github.com/marklogic-community/marklogic-unit-test)**
+
+The releases from this project are still available, but please use the releases from marklogic-unit-test instead. 
+
 ## Easy JUnit 5 testing with MarkLogic
 
 Want to write JUnit 5 tests that verify the behavior of endpoints in [MarkLogic](https://www.marklogic.com/), 
